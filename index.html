@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kundalik yordamchi</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --bg: #eef3f1;
+    --surface: #ffffff;
+    --ink: #112a24;
+    --muted: #5d7770;
+    --line: #d5e2dd;
+    --accent: #0e7c66;
+    --accent-ink: #ffffff;
+    --warm: #c9772b;
+    --good: #1c8a4e;
+    --bad: #c2412d;
+    --serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    box-sizing: border-box;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1a17; --surface: #172622; --ink: #e7f1ed; --muted: #8fa9a1;
+      --line: #263a35; --accent: #3fc3a5; --accent-ink: #06201a; --warm: #e8a35e;
+      --good: #4cc882; --bad: #ef7d69;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg); color: var(--ink); font-family: var(--sans);
+    font-size: 16px; line-height: 1.45;
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  #app { display: flex; flex-direction: column; height: 100%; max-width: 560px; margin: 0 auto; }
+  main { flex: 1; overflow-y: auto; padding: 20px 16px 24px; }
+  h1 { font-family: var(--serif); font-size: 28px; line-height: 1.15; font-weight: 600; letter-spacing: -0.01em; }
+  h2 { font-family: var(--serif); font-size: 20px; font-weight: 600; }
+  .sub { color: var(--muted); font-size: 14px; margin-top: 4px; }
+  section[hidden] { display: none; }
+
+  nav {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    background: var(--surface); border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  nav button {
+    background: none; border: 0; color: var(--muted); font: inherit; font-size: 13px;
+    padding: 10px 4px 12px; display: grid; gap: 2px; justify-items: center; cursor: pointer;
+  }
+  nav button .ic { font-size: 22px; line-height: 1; }
+  nav button[aria-selected="true"] { color: var(--accent); font-weight: 600; }
+  nav button:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  .row-search { display: flex; gap: 8px; margin: 16px 0; }
+  input[type=text] {
+    flex: 1; min-width: 0; font: inherit; padding: 12px 14px; border-radius: 12px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  }
+  .btn {
+    font: inherit; font-weight: 600; border: 0; border-radius: 12px; padding: 12px 18px;
+    background: var(--accent); color: var(--accent-ink); cursor: pointer;
+  }
+  .btn.ghost { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
+  .msg { color: var(--muted); padding: 24px 4px; }
+  .msg.err { color: var(--bad); }
+
+  /* Namoz */
+  .next {
+    background: var(--ink); color: var(--bg); border-radius: 20px; padding: 20px; margin-bottom: 12px;
+  }
+  .next small { opacity: .75; font-size: 14px; }
+  .next .big { font-family: var(--serif); font-size: 40px; line-height: 1.1; margin: 6px 0 2px; }
+  .next .left { color: var(--warm); font-weight: 600; }
+  ul.times { list-style: none; padding: 0; display: grid; gap: 6px; }
+  ul.times li {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 13px 16px;
+  }
+  ul.times li.now { border-color: var(--warm); border-width: 2px; padding: 12px 15px; }
+  ul.times li.past { color: var(--muted); }
+  ul.times b { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+  /* Ob-havo */
+  .wx { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 22px 20px; }
+  .wx .temp { font-family: var(--serif); font-size: 64px; line-height: 1; margin: 8px 0; }
+  .wx .desc { font-size: 18px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px; }
+  .stats div { background: var(--bg); border-radius: 12px; padding: 10px 12px; }
+  .stats small { color: var(--muted); display: block; font-size: 12px; }
+  .stats b { font-variant-numeric: tabular-nums; }
+
+  /* Quiz */
+  .bar { display: flex; gap: 4px; margin: 14px 0 20px; }
+  .bar i { flex: 1; height: 5px; border-radius: 3px; background: var(--line); }
+  .bar i.done { background: var(--accent); }
+  .q { font-family: var(--serif); font-size: 24px; line-height: 1.25; margin-bottom: 18px; }
+  .opts { display: grid; gap: 8px; }
+  .opt {
+    text-align: left; font: inherit; padding: 14px 16px; border-radius: 12px; cursor: pointer;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--line);
+  }
+  .opt.good { border: 2px solid var(--good); padding: 13px 15px; }
+  .opt.bad { border: 2px solid var(--bad); padding: 13px 15px; }
+  .opt:disabled { cursor: default; opacity: 1; }
+  .result { text-align: center; padding: 28px 0; }
+  .result .score { font-family: var(--serif); font-size: 72px; line-height: 1; }
+  .result p { color: var(--muted); margin: 8px 0 20px; }
+  @media (prefers-reduced-motion: no-preference) { .opt, .btn { transition: border-color .15s, background .15s; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <main>
+    <section id="tab-quiz"></section>
+    <section id="tab-prayer" hidden>
+      <h1>Namoz vaqti</h1>
+      <p class="sub" id="prayer-sub">Shaharingizni kiriting</p>
+      <form class="row-search" data-for="prayer" onsubmit="return false">
+        <input type="text" placeholder="Masalan: Tashkent" aria-label="Shahar" autocomplete="off">
+        <button class="btn" type="submit">Topish</button>
+      </form>
+      <div id="prayer-out"></div>
+    </section>
+    <section id="tab-weather" hidden>
+      <h1>Ob-havo</h1>
+      <p class="sub" id="weather-sub">Shaharingizni kiriting</p>
+      <form class="row-search" data-for="weather" onsubmit="return false">
+        <input type="text" placeholder="Masalan: Tashkent" aria-label="Shahar" autocomplete="off">
+        <button class="btn" type="submit">Topish</button>
+      </form>
+      <div id="weather-out"></div>
+    </section>
+  </main>
+  <nav role="tablist">
+    <button role="tab" data-tab="quiz" aria-selected="true"><span class="ic">🧠</span>Quiz</button>
+    <button role="tab" data-tab="prayer" aria-selected="false"><span class="ic">🕌</span>Namoz</button>
+    <button role="tab" data-tab="weather" aria-selected="false"><span class="ic">🌤</span>Ob-havo</button>
+  </nav>
+</div>
+
+<script>
+const tg = window.Telegram && window.Telegram.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+
+const $ = (s, r = document) => r.querySelector(s);
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+};
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/* ---------- Tablar ---------- */
+document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll("nav button").forEach(x => x.setAttribute("aria-selected", x === b));
+  ["quiz", "prayer", "weather"].forEach(t => $("#tab-" + t).hidden = t !== b.dataset.tab);
+}));
+
+/* ---------- Shahar qidirish ---------- */
+async function geocode(name) {
+  const r = await fetch("https://geocoding-api.open-meteo.com/v1/search?count=1&language=en&name=" + encodeURIComponent(name));
+  const d = await r.json();
+  if (!d.results || !d.results.length) return null;
+  const p = d.results[0];
+  return { name: p.name, country: p.country || "", lat: p.latitude, lon: p.longitude, tz: p.timezone || "UTC" };
+}
+
+/* ---------- Namoz vaqti ---------- */
+const PRAYERS = [["Fajr", "Bomdod"], ["Sunrise", "Quyosh"], ["Dhuhr", "Peshin"], ["Asr", "Asr"], ["Maghrib", "Shom"], ["Isha", "Xufton"]];
+const NEXT_KEYS = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
+let prayerState = null;
+
+const toMin = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+function nowMinutes(tz) {
+  const s = new Intl.DateTimeFormat("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date());
+  return toMin(s.replace("24:", "00:"));
+}
+
+async function loadPrayer(place) {
+  const out = $("#prayer-out");
+  out.innerHTML = '<p class="msg">Yuklanmoqda…</p>';
+  try {
+    const d = new Intl.DateTimeFormat("en-GB", { timeZone: place.tz, day: "2-digit", month: "2-digit", year: "numeric" })
+      .format(new Date()).replace(/\//g, "-");
+    const url = `https://api.aladhan.com/v1/timings/${d}?latitude=${place.lat}&longitude=${place.lon}&method=3&school=1&timezonestring=${encodeURIComponent(place.tz)}`;
+    const j = await (await fetch(url)).json();
+    if (j.code !== 200) throw new Error("api");
+    const t = {};
+    PRAYERS.forEach(([k]) => t[k] = j.data.timings[k].slice(0, 5));
+    prayerState = { place, t };
+    $("#prayer-sub").textContent = `${place.name}, ${place.country} · ${d.replace(/-/g, ".")}`;
+    renderPrayer();
+  } catch (e) {
+    out.innerHTML = '<p class="msg err">Namoz vaqtlarini olib bo\'lmadi. Internetni tekshirib, qayta urinib ko\'ring.</p>';
+  }
+}
+
+function renderPrayer() {
+  if (!prayerState) return;
+  const { place, t } = prayerState;
+  const now = nowMinutes(place.tz);
+  let next = NEXT_KEYS.find(k => toMin(t[k]) > now), diff;
+  if (next) diff = toMin(t[next]) - now;
+  else { next = "Fajr"; diff = toMin(t.Fajr) + 1440 - now; }
+  const name = PRAYERS.find(p => p[0] === next)[1];
+  const left = diff >= 60 ? `${Math.floor(diff / 60)} soat ${diff % 60} daqiqa` : `${diff} daqiqa`;
+  $("#prayer-out").innerHTML =
+    `<div class="next"><small>Keyingi namoz</small><div class="big">${name} ${t[next]}</div><div class="left">${left} qoldi</div></div>` +
+    `<ul class="times">` + PRAYERS.map(([k, label]) => {
+      const cls = k === next ? "now" : (toMin(t[k]) <= now ? "past" : "");
+      return `<li class="${cls}"><span>${label}</span><b>${t[k]}</b></li>`;
+    }).join("") + `</ul>`;
+}
+setInterval(renderPrayer, 30000);
+
+/* ---------- Ob-havo ---------- */
+const WX = { 0: "Ochiq", 1: "Asosan ochiq", 2: "Qisman bulutli", 3: "Bulutli", 45: "Tuman", 48: "Tuman",
+  51: "Yengil shivalash", 53: "Shivalash", 55: "Kuchli shivalash", 61: "Yengil yomg'ir", 63: "Yomg'ir",
+  65: "Kuchli yomg'ir", 71: "Yengil qor", 73: "Qor", 75: "Kuchli qor", 80: "Jala", 81: "Jala",
+  82: "Kuchli jala", 95: "Momaqaldiroq", 96: "Do'l bilan momaqaldiroq", 99: "Do'l bilan momaqaldiroq" };
+
+async function loadWeather(place) {
+  const out = $("#weather-out");
+  out.innerHTML = '<p class="msg">Yuklanmoqda…</p>';
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${place.lat}&longitude=${place.lon}&timezone=auto&forecast_days=1` +
+      `&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code` +
+      `&daily=temperature_2m_max,temperature_2m_min`;
+    const j = await (await fetch(url)).json();
+    const w = j.current, d = j.daily;
+    $("#weather-sub").textContent = `${place.name}, ${place.country}`;
+    out.innerHTML = `<div class="wx">
+      <div class="desc">${WX[w.weather_code] || "—"}</div>
+      <div class="temp">${Math.round(w.temperature_2m)}°</div>
+      <div class="sub">His etilishi ${Math.round(w.apparent_temperature)}°C</div>
+      <div class="stats">
+        <div><small>Bugun</small><b>${Math.round(d.temperature_2m_min[0])}° / ${Math.round(d.temperature_2m_max[0])}°</b></div>
+        <div><small>Namlik</small><b>${w.relative_humidity_2m}%</b></div>
+        <div><small>Shamol</small><b>${Math.round(w.wind_speed_10m)} km/s</b></div>
+      </div></div>`;
+  } catch (e) {
+    out.innerHTML = '<p class="msg err">Ob-havoni olib bo\'lmadi. Internetni tekshirib, qayta urinib ko\'ring.</p>';
+  }
+}
+
+/* ---------- Shahar formalari (ikkala tab uchun) ---------- */
+async function searchCity(kind, name, silent) {
+  const out = $("#" + kind + "-out");
+  if (!name.trim()) return;
+  out.innerHTML = '<p class="msg">Qidirilmoqda…</p>';
+  try {
+    const place = await geocode(name.trim());
+    if (!place) { out.innerHTML = '<p class="msg err">Shahar topilmadi. Lotin harflarida yozing (masalan: Tashkent).</p>'; return; }
+    store.set("place", JSON.stringify(place));
+    document.querySelectorAll("form[data-for] input").forEach(i => i.value = place.name);
+    loadPrayer(place); loadWeather(place);
+  } catch (e) {
+    out.innerHTML = '<p class="msg err">Shaharni qidirib bo\'lmadi. Internetni tekshiring.</p>';
+  }
+}
+document.querySelectorAll("form[data-for]").forEach(f => f.addEventListener("submit", e => {
+  e.preventDefault();
+  searchCity(f.dataset.for, $("input", f).value);
+}));
+
+/* ---------- Quiz ---------- */
+const QUESTIONS = [
+  ["O'zbekiston poytaxti qaysi shahar?", ["Samarqand", "Toshkent", "Buxoro", "Xiva"], 1],
+  ["Yer Quyosh atrofida taxminan necha kunda aylanadi?", ["180", "300", "365", "400"], 2],
+  ["Eng katta okean qaysi?", ["Atlantika", "Hind", "Shimoliy Muz", "Tinch"], 3],
+  ["Qur'oni Karimda nechta sura bor?", ["99", "114", "120", "100"], 1],
+  ["12 × 12 = ?", ["124", "132", "144", "154"], 2],
+  ["Suv normal sharoitda necha °C da qaynaydi?", ["90", "100", "110", "120"], 1],
+  ["Alisher Navoiy qaysi asrda yashagan?", ["XII", "XV", "XVIII", "XX"], 1],
+  ["Amir Temur qaysi yilda tug'ilgan?", ["1250", "1336", "1405", "1500"], 1],
+  ["Haftada nechta kun bor?", ["5", "6", "7", "8"], 2],
+  ["Inson tanasida nechta asosiy sezgi a'zosi bor (klassik tasnif)?", ["3", "4", "5", "6"], 2]
+];
+let qi = 0, score = 0;
+
+function renderQuiz(answered) {
+  const el = $("#tab-quiz");
+  if (qi >= QUESTIONS.length) {
+    const best = Math.max(Number(store.get("best") || 0), score);
+    store.set("best", best);
+    el.innerHTML = `<div class="result"><h1>Quiz tugadi</h1>
+      <div class="score">${score}/${QUESTIONS.length}</div>
+      <p>Eng yaxshi natijangiz: ${best}/${QUESTIONS.length}</p>
+      <button class="btn" id="again">Qayta boshlash</button></div>`;
+    $("#again").onclick = () => { qi = 0; score = 0; renderQuiz(); };
+    return;
+  }
+  const [q, opts, right] = QUESTIONS[qi];
+  el.innerHTML = `<h1>Quiz</h1>
+    <p class="sub">Savol ${qi + 1}/${QUESTIONS.length} · Ball: ${score}</p>
+    <div class="bar">${QUESTIONS.map((_, i) => `<i class="${i < qi ? "done" : ""}"></i>`).join("")}</div>
+    <p class="q">${esc(q)}</p>
+    <div class="opts">${opts.map((o, i) => `<button class="opt" data-i="${i}">${esc(o)}</button>`).join("")}</div>
+    <div id="nextwrap" style="margin-top:16px"></div>`;
+  el.querySelectorAll(".opt").forEach(b => b.addEventListener("click", () => {
+    const k = Number(b.dataset.i);
+    el.querySelectorAll(".opt").forEach(x => {
+      x.disabled = true;
+      if (Number(x.dataset.i) === right) x.classList.add("good");
+    });
+    if (k === right) score++; else b.classList.add("bad");
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred(k === right ? "success" : "error");
+    $("#nextwrap").innerHTML = `<button class="btn" id="next">${qi + 1 === QUESTIONS.length ? "Natijani ko'rish" : "Keyingi savol"}</button>`;
+    $("#next").onclick = () => { qi++; renderQuiz(); };
+  }));
+}
+renderQuiz();
+
+/* ---------- Saqlangan shahar ---------- */
+try {
+  const saved = JSON.parse(store.get("place") || "null");
+  if (saved) {
+    document.querySelectorAll("form[data-for] input").forEach(i => i.value = saved.name);
+    loadPrayer(saved); loadWeather(saved);
+  }
+} catch (e) {}
+</script>
+</body>
+</html>
