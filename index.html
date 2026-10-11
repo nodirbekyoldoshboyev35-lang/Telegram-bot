@@ -267,7 +267,7 @@ document.querySelectorAll("form[data-for]").forEach(f => f.addEventListener("sub
 }));
 
 /* ---------- Quiz ---------- */
-const QUESTIONS = [
+const BANK = [
   ["O'zbekiston poytaxti qaysi shahar?", ["Samarqand", "Toshkent", "Buxoro", "Xiva"], 1],
   ["Yer Quyosh atrofida taxminan necha kunda aylanadi?", ["180", "300", "365", "400"], 2],
   ["Eng katta okean qaysi?", ["Atlantika", "Hind", "Shimoliy Muz", "Tinch"], 3],
@@ -277,8 +277,56 @@ const QUESTIONS = [
   ["Alisher Navoiy qaysi asrda yashagan?", ["XII", "XV", "XVIII", "XX"], 1],
   ["Amir Temur qaysi yilda tug'ilgan?", ["1250", "1336", "1405", "1500"], 1],
   ["Haftada nechta kun bor?", ["5", "6", "7", "8"], 2],
-  ["Inson tanasida nechta asosiy sezgi a'zosi bor (klassik tasnif)?", ["3", "4", "5", "6"], 2]
+  ["Quyosh tizimidagi eng katta sayyora qaysi?", ["Mars", "Yupiter", "Saturn", "Yer"], 1],
+  ["Nafas olish uchun zarur bo'lgan gaz qaysi?", ["Azot", "Kislorod", "Vodorod", "Geliy"], 1],
+  ["Kattalarda nechta tish bo'ladi?", ["28", "30", "32", "36"], 2],
+  ["Dunyodagi eng baland cho'qqi qaysi?", ["Elbrus", "Everest", "Alp", "Kilimanjaro"], 1],
+  ["Mirzo Ulug'bek qaysi sohada mashhur?", ["Astronomiya", "Tibbiyot", "Harbiy ish", "Savdo"], 0],
+  ["Al-Xorazmiy qaysi fan rivojiga katta hissa qo'shgan?", ["Kimyo", "Algebra", "Biologiya", "Geografiya"], 1],
+  ["Ibn Sinoning Tib qonunlari asari qaysi sohaga oid?", ["Tibbiyot", "Astronomiya", "Tarix", "Adabiyot"], 0],
+  ["Islomda kunlik majburiy namozlar soni nechta?", ["3", "4", "5", "6"], 2],
+  ["Islomning asosiy ustunlari nechta?", ["3", "4", "5", "7"], 2],
+  ["Ka'ba qaysi shaharda joylashgan?", ["Madina", "Makka", "Quddus", "Damashq"], 1],
+  ["Qur'onning birinchi nozil bo'lgan oyatlari qaysi suradan?", ["Fotiha", "Baqara", "Alaq", "Ixlos"], 2],
+  ["O'zbekiston Mustaqillik kuni qachon nishonlanadi?", ["1 yanvar", "9 may", "1 sentabr", "21 mart"], 2],
+  ["Quyosh tizimida nechta sayyora bor?", ["7", "8", "9", "10"], 1],
+  ["Eng kichik tub son qaysi?", ["0", "1", "2", "3"], 2],
+  ["Uchburchak ichki burchaklari yig'indisi necha gradus?", ["90", "180", "270", "360"], 1],
+  ["15 × 4 = ?", ["45", "50", "60", "65"], 2],
+  ["Tomoni 5 sm bo'lgan kvadratning perimetri necha sm?", ["10", "15", "20", "25"], 2],
+  ["Quyidagilardan qaysi biri sutemizuvchi?", ["Akula", "Delfin", "Tun baliq", "Ilon baliq"], 1],
+  ["Inson tanasidagi eng katta a'zo qaysi?", ["Jigar", "Teri", "Yurak", "O'pka"], 1],
+  ["Qaysi sayyora Qizil sayyora deb ataladi?", ["Venera", "Mars", "Yupiter", "Merkuriy"], 1],
+  ["Yerning tabiiy yo'ldoshi qaysi?", ["Oy", "Quyosh", "Mars", "Venera"], 0],
+  ["Yorug'lik tezligi taxminan qancha?", ["3 000 km/s", "30 000 km/s", "300 000 km/s", "3 000 000 km/s"], 2],
+  ["Suvning kimyoviy formulasi qaysi?", ["CO2", "H2O", "O2", "NaCl"], 1],
+  ["Dunyodagi eng katta qit'a qaysi?", ["Afrika", "Yevropa", "Osiyo", "Amerika"], 2],
+  ["Samarqanddagi mashhur maydon qaysi?", ["Registon", "Minor", "Chorsu", "Navro'z"], 0],
+  ["Buxorodagi mashhur minora qaysi?", ["Kalon minorasi", "Pisa minorasi", "Eyfel minorasi", "Ostankino"], 0],
+  ["Xivadagi qadimiy shahar qismi nima deb ataladi?", ["Ichan Qal'a", "Ark", "Shohizinda", "Go'ri Amir"], 0],
+  ["Alisher Navoiyning mashhur asari qaysi?", ["Xamsa", "Boburnoma", "Qutadg'u bilig", "Shohnoma"], 0],
+  ["Boburnoma kimning asari?", ["Navoiy", "Bobur", "Ulug'bek", "Beruniy"], 1],
+  ["Bir yilda nechta oy bor?", ["10", "11", "12", "13"], 2],
+  ["1 kilometr necha metr?", ["10", "100", "1000", "10 000"], 2]
 ];
+let QUESTIONS = [];
+
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+// Har safar 10 ta tasodifiy savol tanlanadi, variantlar ham aralashtiriladi
+function newRound() {
+  QUESTIONS = shuffle(BANK.slice()).slice(0, 10).map(([q, opts, right]) => {
+    const correct = opts[right];
+    const mixed = shuffle(opts.slice());
+    return [q, mixed, mixed.indexOf(correct)];
+  });
+  qi = 0; score = 0;
+}
 let qi = 0, score = 0;
 
 function renderQuiz(answered) {
@@ -290,7 +338,7 @@ function renderQuiz(answered) {
       <div class="score">${score}/${QUESTIONS.length}</div>
       <p>Eng yaxshi natijangiz: ${best}/${QUESTIONS.length}</p>
       <button class="btn" id="again">Qayta boshlash</button></div>`;
-    $("#again").onclick = () => { qi = 0; score = 0; renderQuiz(); };
+    $("#again").onclick = () => { newRound(); renderQuiz(); };
     return;
   }
   const [q, opts, right] = QUESTIONS[qi];
@@ -312,6 +360,7 @@ function renderQuiz(answered) {
     $("#next").onclick = () => { qi++; renderQuiz(); };
   }));
 }
+newRound();
 renderQuiz();
 
 /* ---------- Saqlangan shahar ---------- */
