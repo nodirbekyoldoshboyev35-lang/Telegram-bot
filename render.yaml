@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: taksi-bot          # <-- hozirgi Render servisingiz nomi bilan bir xil qiling
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: BOT_TOKEN
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+    # Pullik tarifda ma'lumotlar o'chib ketmasligi uchun (plan: starter) quyidagini yoqing:
+    # disk:
+    #   name: data
+    #   mountPath: /data
+    #   sizeGB: 1
+    # va envVars ga qo'shing:
+    #   - key: DB_PATH
+    #     value: /data/taxi.db
+    #   - key: MEDIA_DIR
+    #     value: /data/media

@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Taksi Bot</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--card:rgba(255,255,255,.07);--line:rgba(255,255,255,.13);--y1:#ffd426;--y2:#ffab00;--mut:#9aa4c4;--green:#1fae52}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#fff;overflow:hidden;
+  background:
+   radial-gradient(520px 320px at 12% 6%,rgba(255,193,7,.20),transparent 62%),
+   radial-gradient(480px 420px at 105% 32%,rgba(60,95,255,.26),transparent 62%),
+   radial-gradient(520px 320px at -5% 100%,rgba(255,193,7,.16),transparent 62%),
+   linear-gradient(180deg,#080c1c,#0f1632 55%,#080c1c)}
+#bokeh{position:fixed;inset:auto 0 0 0;height:38%;pointer-events:none;overflow:hidden}
+#bokeh i{position:absolute;border-radius:50%;filter:blur(2px);opacity:.55}
+#app{position:relative;height:100%;max-width:520px;margin:0 auto}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;overflow-y:auto;
+  padding:calc(env(safe-area-inset-top,0px) + 14px) 16px calc(env(safe-area-inset-bottom,0px) + 18px)}
+.screen.active{display:flex;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+h1,h2,h3,p{margin:0}
+.center{align-items:center;justify-content:center;text-align:center}
+
+/* tugmalar */
+.btn{border:0;border-radius:18px;padding:16px 18px;font-size:17px;font-weight:800;font-family:inherit;cursor:pointer;color:#1a1300;
+  background:linear-gradient(180deg,var(--y1),var(--y2));box-shadow:0 6px 24px rgba(255,180,0,.35),inset 0 1px 0 rgba(255,255,255,.55);
+  display:flex;align-items:center;justify-content:center;gap:10px;width:100%}
+.btn:active{transform:scale(.98)}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.btn small{display:block;font-size:12px;font-weight:600;opacity:.75}
+.btn.ghost{background:rgba(255,200,40,.10);color:var(--y1);box-shadow:none;border:1.5px solid rgba(255,200,40,.55)}
+.menu-btn{border:0;border-radius:22px;padding:14px 18px;display:flex;align-items:center;gap:14px;width:100%;text-align:left;
+  font-family:inherit;color:#1a1300;cursor:pointer;margin-bottom:14px;
+  background:linear-gradient(180deg,var(--y1),var(--y2));box-shadow:0 8px 28px rgba(255,180,0,.38),inset 0 1px 0 rgba(255,255,255,.55)}
+.menu-btn b{display:block;font-size:21px}
+.menu-btn span{font-size:17px;font-weight:700;opacity:.85}
+.menu-btn .chev{margin-left:auto;font-size:30px;font-weight:700;opacity:.8}
+.menu-btn.blue{color:#fff;background:linear-gradient(180deg,#1c2b63,#111a3f);border:1.5px solid rgba(90,135,255,.65);
+  box-shadow:0 8px 28px rgba(40,80,255,.22),inset 0 1px 0 rgba(255,255,255,.12)}
+.menu-btn.blue span{opacity:.8}
+.mini{display:flex;gap:10px;margin-top:2px}
+.mini button{flex:1;border:1px solid var(--line);border-radius:18px;padding:14px 6px;background:rgba(20,28,66,.75);color:#fff;
+  font-family:inherit;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer}
+
+/* sarlavha */
+.top{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.back{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:#fff;font-size:20px;cursor:pointer;flex:none}
+.top h2{font-size:21px;flex:1}
+.plus{color:var(--y1)}
+.coin{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:6px 12px;font-weight:800}
+.hint{color:#dfe5ff;margin:2px 2px 12px;font-size:15px}
+
+/* maydonlar */
+.field{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 12px;margin-bottom:10px}
+.field .ic{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:rgba(255,200,40,.13);font-size:21px;flex:none}
+.field .in{flex:1;min-width:0}
+.field label{display:block;font-size:13px;color:var(--mut);margin-bottom:1px}
+.field input,.field select{width:100%;background:transparent;border:0;outline:0;color:#fff;font-size:16px;font-weight:600;font-family:inherit;padding:2px 0;appearance:none;-webkit-appearance:none}
+.field input::placeholder{color:#7d87aa;font-weight:500}
+.field select option{color:#000}
+input[type=time]{color-scheme:dark}
+.spacer{flex:1;min-height:14px}
+.pill{align-self:center;display:flex;align-items:center;gap:10px;background:rgba(10,14,30,.8);border:1px solid var(--line);border-radius:18px;padding:12px 16px;font-weight:700;margin:6px 0 16px;font-size:14px}
+.banner{background:rgba(255,120,60,.14);border:1px solid rgba(255,140,80,.5);color:#ffd9c2;border-radius:14px;padding:10px 12px;margin-bottom:12px;font-size:14px;display:none}
+
+/* splash */
+.logo{position:relative;width:128px;height:128px;border-radius:50%;background:linear-gradient(180deg,var(--y1),var(--y2));display:grid;place-items:center;
+  box-shadow:0 0 50px rgba(255,190,0,.45);margin-bottom:14px}
+.logo>svg{width:92px}
+.tg{position:absolute;right:-10px;bottom:-4px;width:46px;height:46px;border-radius:50%;background:#2aa3ee;display:grid;place-items:center;border:3px solid #0f1632}
+.title{font-size:54px;font-weight:900;font-style:italic;letter-spacing:-1px;line-height:1}
+.title b{color:var(--y1)}
+.tag{margin:8px 0 18px;font-style:italic;font-weight:600;color:#e9edff}
+.spin{width:34px;height:34px;border-radius:50%;border:4px solid rgba(255,255,255,.2);border-top-color:var(--y1);animation:sp 1s linear infinite;margin:14px auto 8px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* bosh sahifa */
+.hello{display:flex;align-items:center;gap:14px;margin:6px 0 20px}
+.robot{width:96px;height:96px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:52px;position:relative;
+  background:radial-gradient(circle at 50% 35%,#2b3a78,#121a40);border:3px solid rgba(255,200,40,.75);box-shadow:0 0 28px rgba(255,190,0,.4)}
+.robot em{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--y1);color:#1a1300;font-style:normal;font-weight:900;font-size:11px;padding:2px 9px;border-radius:8px 8px 3px 3px}
+.hello h2{font-size:30px}
+.hello p{color:#dfe5ff;margin-top:4px;font-size:17px}
+
+/* natijalar */
+.card{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px;margin-bottom:12px}
+.card .carbox{width:66px;flex:none;--car:#f4f6fa}
+.row1{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}
+.row1 b{flex:1 1 100%;min-width:0;white-space:normal!important}
+.row1 .price{padding:5px 11px;font-size:15px}
+.card .meta{flex:1;min-width:0}
+.card .meta b{font-size:20px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .meta span{font-size:13px;color:#cfd6f3;display:block;margin-top:3px}
+.price{background:linear-gradient(180deg,var(--y1),var(--y2));color:#1a1300;font-weight:900;border-radius:14px;padding:8px 12px;white-space:nowrap;font-size:16px}
+.call{width:50px;height:50px;border-radius:14px;background:linear-gradient(180deg,#27c25f,#168a3f);display:grid;place-items:center;font-size:24px;text-decoration:none;flex:none}
+.right{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.refresh{border:1px solid var(--line);background:var(--card);color:#fff;border-radius:16px;padding:8px 12px;font-family:inherit;font-weight:700;cursor:pointer}
+.empty{text-align:center;color:var(--mut);padding:40px 10px}
+.empty b{display:block;font-size:42px;margin-bottom:8px}
+
+/* reklama */
+.adbox{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:16px}
+.adbox img{max-width:100%;max-height:36vh;border-radius:18px}
+.adtext{font-size:22px;font-weight:800;line-height:1.3;white-space:pre-wrap;word-break:break-word}
+.mega{font-size:96px;filter:drop-shadow(0 0 26px rgba(255,190,0,.5))}
+.noad{font-size:30px;font-weight:800;font-style:italic;line-height:1.25}
+.noad em{color:var(--y1)}
+.bar{height:8px;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden;margin:10px 0 6px}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--y1),var(--y2));transition:width .25s linear}
+.done-emoji{font-size:110px;filter:drop-shadow(0 0 30px rgba(255,190,0,.6))}
+.okline{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:800;margin:14px 0 26px}
+.okline i{width:34px;height:34px;border-radius:50%;background:var(--green);display:grid;place-items:center;font-style:normal}
+.list li{margin-bottom:10px;color:#dfe5ff;line-height:1.4}
+.del{border:0;background:rgba(255,70,70,.18);color:#ff9b9b;border-radius:12px;padding:10px 12px;font-size:18px;cursor:pointer}
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 26px);transform:translate(-50%,30px);opacity:0;pointer-events:none;
+  background:#fff;color:#111;font-weight:700;padding:11px 16px;border-radius:14px;max-width:90%;text-align:center;transition:.25s;z-index:99}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<div id="bokeh"></div>
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="taxi" viewBox="0 0 220 100">
+    <ellipse cx="110" cy="91" rx="96" ry="7" fill="rgba(0,0,0,.45)"/>
+    <path d="M12 68Q12 52 30 48L58 44Q70 22 96 20L140 20Q166 22 178 44L200 50Q212 54 210 68L210 74Q210 78 205 78L17 78Q12 78 12 74Z" fill="var(--car,#ffc107)"/>
+    <path d="M70 44Q78 29 98 28L111 28L111 44Z" fill="#a8d8ff"/>
+    <path d="M117 28L138 28Q154 30 163 44L117 44Z" fill="#a8d8ff"/>
+    <rect x="100" y="11" width="26" height="10" rx="2" fill="#fff"/>
+    <rect x="102" y="13" width="22" height="6" rx="1" fill="#222" opacity=".85"/>
+    <circle cx="58" cy="78" r="15" fill="#111"/><circle cx="58" cy="78" r="7" fill="#bbb"/>
+    <circle cx="166" cy="78" r="15" fill="#111"/><circle cx="166" cy="78" r="7" fill="#bbb"/>
+    <rect x="198" y="56" width="11" height="6" rx="2" fill="#fff6c2"/>
+    <rect x="13" y="58" width="8" height="6" rx="2" fill="#ff5a4a"/>
+  </symbol>
+</svg>
+
+<div id="app">
+
+  <!-- Yuklanmoqda -->
+  <section id="splash" class="screen center active">
+    <div class="logo">
+      <svg viewBox="0 0 220 100" style="--car:#1a1300"><use href="#taxi"/></svg>
+      <div class="tg"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M2 11.5 22 3l-3.5 18-6-4.5-3 3v-5L19 6.5 7 13z" fill="#fff"/></svg></div>
+    </div>
+    <div class="title">Taksi <b>Bot</b></div>
+    <p class="tag">Tez • Qulay • Ishonchli</p>
+    <svg viewBox="0 0 220 100" width="290" style="--car:#ffc107;filter:drop-shadow(0 0 24px rgba(255,190,0,.35))"><use href="#taxi"/></svg>
+    <div class="spin" id="spin"></div>
+    <p id="splashMsg" style="font-weight:700">Yuklanmoqda...</p>
+  </section>
+
+  <!-- Bosh sahifa -->
+  <section id="home" class="screen">
+    <div class="hello">
+      <div class="robot"><em>TAXI</em>🤖</div>
+      <div><h2>👋 Salom<span id="uname"></span>!</h2><p>Taksi botiga xush kelibsiz!</p><p style="color:var(--mut);font-size:15px;margin-top:6px">Kerakli bo'limni tanlang:</p></div>
+    </div>
+    <button class="menu-btn" onclick="openAdd()">
+      <svg viewBox="0 0 48 48" width="50" height="50"><circle cx="24" cy="24" r="20" fill="none" stroke="#1a1300" stroke-width="4"/><circle cx="24" cy="24" r="5" fill="#1a1300"/><path d="M4 24h14M30 24h14M24 29v15" stroke="#1a1300" stroke-width="4" stroke-linecap="round"/></svg>
+      <div><b>Haydovchi uchun</b><span>Taksi qo'shish +</span></div><i class="chev">›</i>
+    </button>
+    <button class="menu-btn blue" onclick="go('search')">
+      <svg viewBox="0 0 48 48" width="50" height="50"><circle cx="24" cy="15" r="9" fill="#c9bfff"/><path d="M6 44c0-11 8-17 18-17s18 6 18 17z" fill="#c9bfff"/></svg>
+      <div><b>Yo'lovchi uchun</b><span>Taksi qidirish</span></div><i class="chev">›</i>
+    </button>
+    <div class="mini">
+      <button onclick="go('balance')">🪙 Balans</button>
+      <button onclick="go('info')"><span style="background:#2d8cff;border-radius:50%;width:22px;height:22px;display:grid;place-items:center;font-size:13px">i</span> Ma'lumot</button>
+      <button onclick="go('my')">📋 Taksilarim</button>
+    </div>
+  </section>
+
+  <!-- Taksi qo'shish -->
+  <section id="add" class="screen">
+    <div class="top"><button class="back" onclick="back()">←</button><h2>Taksi qo'shish <span class="plus">+</span></h2><div class="coin">🪙 <b class="coinval">0</b></div></div>
+    <div class="banner" id="noCoin">Taksi qo'shish uchun 1 tanga kerak. Pastdagi tugma orqali reklama ko'rib tanga oling.</div>
+    <p class="hint">Quyidagi ma'lumotlarni kiriting:</p>
+    <div class="field"><div class="ic">📞</div><div class="in"><label>Telefon raqami</label><input id="fPhone" type="tel" inputmode="tel" placeholder="+998 90 123 45 67"></div></div>
+    <div class="field"><div class="ic">📍</div><div class="in"><label>Qayerga borishi</label><select id="fDest"></select></div></div>
+    <div class="field"><div class="ic">🕒</div><div class="in"><label>Ketish vaqti</label><input id="fTime" type="time"></div></div>
+    <div class="field"><div class="ic">🚗</div><div class="in"><label>Mashina turi</label><input id="fCar" type="text" maxlength="40" placeholder="Masalan: Nexia, Lacetti, Onix"></div></div>
+    <div class="field"><div class="ic">🪙</div><div class="in"><label>Narxi (so'm)</label><input id="fPrice" type="text" inputmode="numeric" placeholder="Masalan: 20 000"></div></div>
+    <div class="spacer"></div>
+    <button class="btn" id="btnAdd" onclick="submitTaxi()">Taksini qo'shish (−1 tanga)</button>
+    <button class="btn ghost" style="margin-top:10px" onclick="watchAd()">▶️ <span>Reklamani ko'rish va 1 tangani olish<small>(1 ta reklama = 1 tanga)</small></span></button>
+  </section>
+
+  <!-- Reklama -->
+  <section id="ad" class="screen">
+    <div class="top"><h2 style="flex:1">Reklama</h2><div class="coin">⏳ <b id="adTimer">5</b></div></div>
+    <div class="adbox" id="adBox"></div>
+    <div class="bar"><i id="adBar"></i></div>
+    <p style="text-align:center;color:var(--mut);font-size:14px">Tanga reklama tugagach beriladi</p>
+  </section>
+
+  <!-- Tayyor -->
+  <section id="done" class="screen center">
+    <div class="done-emoji" id="doneEmoji">🎬</div>
+    <h2 id="doneTitle" style="font-size:24px;margin-top:8px">Reklama tomosha qilindi!</h2>
+    <div class="okline"><i>✓</i><span id="doneSub">1 tanga berildi!</span></div>
+    <button class="btn" onclick="doneNext()">Davom etish</button>
+  </section>
+
+  <!-- Taksi qidirish -->
+  <section id="search" class="screen">
+    <div class="top"><button class="back" onclick="back()">←</button><h2>Taksi qidirish</h2></div>
+    <div class="field"><div class="ic">📍</div><div class="in"><label>Manzilni tanlang</label><select id="sDest"></select></div></div>
+    <div class="field"><div class="ic">🕒</div><div class="in"><label>Soatni kiriting</label><input id="sTime" type="time"></div></div>
+    <div class="pill">🕒 <span>±30 daqiqa ichidagi taksilar ko'rsatiladi</span></div>
+    <button class="btn" onclick="doSearch()">🔍 Qidirish</button>
+  </section>
+
+  <!-- Natijalar -->
+  <section id="results" class="screen">
+    <div class="top"><button class="back" onclick="back()">←</button><h2 id="resTitle" style="font-size:20px">Taksilar topildi!</h2><button class="refresh" onclick="doSearch(true)">⟳ Yangilash</button></div>
+    <p class="hint" id="resSub"></p>
+    <div id="resList"></div>
+  </section>
+
+  <!-- Balans -->
+  <section id="balance" class="screen center">
+    <div style="font-size:90px">🪙</div>
+    <h2 style="font-size:46px;margin:4px 0"><span class="coinval">0</span></h2>
+    <p style="color:var(--mut);margin-bottom:26px">tanga balansingizda</p>
+    <button class="btn" style="margin-bottom:12px" onclick="watchAd()">▶️ <span>Reklamani ko'rish va 1 tangani olish<small>(1 ta reklama = 1 tanga)</small></span></button>
+    <button class="btn ghost" onclick="back()">Orqaga</button>
+  </section>
+
+  <!-- Ma'lumot -->
+  <section id="info" class="screen">
+    <div class="top"><button class="back" onclick="back()">←</button><h2>Ma'lumot</h2></div>
+    <ul class="list" style="padding-left:18px">
+      <li><b>Haydovchi</b> «Taksi qo'shish +» orqali telefon, manzil, ketish vaqti, mashina turi va narxni kiritadi.</li>
+      <li>Har bir taksi qo'shish <b>1 tanga</b> turadi.</li>
+      <li><b>1 tanga</b> reklama ko'rib olinadi.</li>
+      <li><b>Yo'lovchi</b> manzilni tanlab soatni kiritadi — shu vaqtga <b>±30 daqiqa</b> ichidagi taksilar ko'rsatiladi.</li>
+      <li>Ketish vaqti o'tgan taksilar avtomatik o'chiriladi.</li>
+    </ul>
+  </section>
+
+  <!-- Mening taksilarim -->
+  <section id="my" class="screen">
+    <div class="top"><button class="back" onclick="back()">←</button><h2>Mening taksilarim</h2></div>
+    <div id="myList"></div>
+  </section>
+</div>
+<div id="toast"></div>
+
+<script>
+const tg = window.Telegram && Telegram.WebApp;
+if (tg) { tg.ready(); tg.expand(); try { tg.setHeaderColor('#080c1c'); tg.setBackgroundColor('#080c1c'); } catch(e){} }
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const money = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + " so'm";
+let coins = 0, stack = [], lastSearch = null, adBusy = false, doneNextFn = null;
+
+// fon yorug'liklari
+(function(){
+  const cols = ['#ffc107','#ffd54f','#4d7cff','#ff9800','#7aa2ff'];
+  const b = $('bokeh');
+  for (let i = 0; i < 22; i++) {
+    const e = document.createElement('i'), s = 6 + Math.random() * 22;
+    e.style.cssText = `width:${s}px;height:${s}px;left:${Math.random()*100}%;top:${Math.random()*100}%;background:${cols[i%cols.length]}`;
+    b.appendChild(e);
+  }
+})();
+
+function toast(m){ const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2800); }
+function setCoins(n){ coins = n; document.querySelectorAll('.coinval').forEach(e => e.textContent = n); }
+
+async function api(path, opts = {}){
+  const r = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', 'X-Init-Data': tg ? tg.initData : '' } });
+  let data = {}; try { data = await r.json(); } catch(e){}
+  if (!r.ok) { const e = new Error(data.error || 'Xatolik yuz berdi'); e.status = r.status; throw e; }
+  return data;
+}
+
+// navigatsiya
+function show(id){ document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id)); const a = $(id); if (a) a.scrollTop = 0; }
+function updBack(){ if (!tg) return; stack.length > 1 ? tg.BackButton.show() : tg.BackButton.hide(); }
+function go(id){ if (stack[stack.length-1] !== id) stack.push(id); show(id); updBack(); onEnter(id); }
+function replaceTop(id){ stack[stack.length-1] = id; show(id); updBack(); }
+function back(){ if (adBusy) return toast('Reklama tugashini kuting'); if (stack.length > 1) { stack.pop(); const id = stack[stack.length-1]; show(id); updBack(); onEnter(id); } }
+function goHome(){ stack = ['home']; show('home'); updBack(); }
+if (tg) tg.BackButton.onClick(back);
+
+function onEnter(id){
+  if (id === 'my') loadMy();
+  if (id === 'add') $('noCoin').style.display = coins < 1 ? 'block' : 'none';
+  if (id === 'balance') refreshCoins();
+}
+async function refreshCoins(){ try { setCoins((await api('/api/me')).coins); } catch(e){} }
+function openAdd(){ go('add'); }
+
+// taksi qo'shish
+async function submitTaxi(){
+  const body = { phone: $('fPhone').value, dest: $('fDest').value, time: $('fTime').value, car: $('fCar').value, price: $('fPrice').value };
+  if (coins < 1) { $('noCoin').style.display = 'block'; return toast("Tanga yo'q. Reklama ko'ring"); }
+  const btn = $('btnAdd'); btn.disabled = true;
+  try {
+    const r = await api('/api/taxis', { method: 'POST', body: JSON.stringify(body) });
+    setCoins(r.coins);
+    ['fPhone','fTime','fCar','fPrice'].forEach(i => $(i).value = '');
+    showDone('🚖', "Taksi qo'shildi!", `Ketish: ${r.departure} · qolgan tanga: ${r.coins}`, goHome);
+  } catch(e) { toast(e.message); if (e.status === 402) { setCoins(0); $('noCoin').style.display = 'block'; } }
+  btn.disabled = false;
+}
+
+function showDone(emoji, title, sub, next){
+  $('doneEmoji').textContent = emoji; $('doneTitle').textContent = title; $('doneSub').textContent = sub; doneNextFn = next || back;
+  if (stack[stack.length-1] === 'ad') replaceTop('done'); else go('done');
+}
+function doneNext(){ doneNextFn(); }
+
+// reklama
+function renderAd(ad){
+  const box = $('adBox');
+  if (!ad) {
+    box.innerHTML = '<div class="mega">📢</div><div class="noad">Bu yerda sizning<br><em>reklamangiz</em><br>bo\'lishi mumkin edi</div>';
+    return;
+  }
+  let h = '';
+  if (ad.image) h += `<img src="${esc(ad.image)}" alt="">`;
+  h += `<div class="adtext">${esc(ad.text)}</div>`;
+  if (ad.link) h += `<button class="btn ghost" style="width:auto" onclick="openLink('${esc(ad.link)}')">🔗 Batafsil</button>`;
+  box.innerHTML = h;
+}
+function openLink(u){ if (tg && tg.openLink) tg.openLink(u); else window.open(u, '_blank'); }
+
+async function watchAd(){
+  if (adBusy) return;
+  adBusy = true;
+  let started = false;
+  try {
+    const r = await api('/api/ad/start', { method: 'POST' });
+    renderAd(r.ad); go('ad'); started = true;
+    const total = Math.max(1, r.seconds);
+    for (let t = total; t > 0; t--) {
+      $('adTimer').textContent = t; $('adBar').style.width = ((total - t) / total * 100) + '%';
+      await sleep(1000);
+    }
+    $('adTimer').textContent = 0; $('adBar').style.width = '100%';
+    const c = await api('/api/ad/claim', { method: 'POST' });
+    setCoins(c.coins);
+    adBusy = false;
+    showDone('🎬', 'Reklama tomosha qilindi!', '1 tanga berildi!', back);
+  } catch(e) {
+    adBusy = false; toast(e.message);
+    if (started && stack[stack.length-1] === 'ad') back();
+  }
+  adBusy = false;
+}
+
+// qidirish
+async function doSearch(refresh){
+  let q;
+  if (refresh && lastSearch) q = lastSearch; else q = { dest: $('sDest').value, time: $('sTime').value };
+  if (!q.dest || !q.time) return toast('Manzil va soatni tanlang');
+  try {
+    const r = await api('/api/search?dest=' + encodeURIComponent(q.dest) + '&time=' + encodeURIComponent(q.time));
+    lastSearch = q; renderResults(r); go('results');
+  } catch(e) { toast(e.message); }
+}
+function diffText(d){ return d === 0 ? 'aynan shu vaqt' : `${d > 0 ? '+' : '−'}${Math.abs(d)} daqiqa`; }
+function renderResults(r){
+  const ok = r.items.length > 0;
+  $('resTitle').textContent = ok ? '✅ Taksilar topildi!' : 'Taksi topilmadi';
+  $('resSub').textContent = `${r.dest} · ${r.want} (±${r.window} daqiqa)`;
+  $('resList').innerHTML = ok ? r.items.map(t => `
+    <div class="card">
+      <div class="carbox"><svg viewBox="0 0 220 100"><use href="#taxi"/></svg></div>
+      <div class="meta"><div class="row1"><b>${esc(t.car)}</b><div class="price">${money(t.price)}</div></div><span>Ketish vaqti: ${t.today ? '' : esc(t.date) + ' '}${esc(t.time)} (${diffText(t.diff)})</span></div>
+      <a class="call" href="tel:${esc(t.phone)}" title="${esc(t.phone)}">📞</a>
+    </div>`).join('') : '<div class="empty"><b>😕</b>Bu vaqt oralig\'ida taksi yo\'q.<br>Boshqa soatni sinab ko\'ring.</div>';
+}
+
+// mening taksilarim
+async function loadMy(){
+  const box = $('myList'); box.innerHTML = '<div class="spin"></div>';
+  try {
+    const r = await api('/api/my');
+    box.innerHTML = r.items.length ? r.items.map(t => `
+      <div class="card" data-id="${t.id}">
+        <div class="meta"><b>${esc(t.dest)} · ${esc(t.dep)}</b><span>${esc(t.car)} · ${money(t.price)}<br>${esc(t.phone)}</span></div>
+        <button class="del" onclick="delTaxi(${t.id})">🗑</button>
+      </div>`).join('') : '<div class="empty"><b>🚕</b>Sizda faol taksi yo\'q.</div>';
+  } catch(e) { box.innerHTML = ''; toast(e.message); }
+}
+async function delTaxi(id){
+  try { await api('/api/taxis/' + id, { method: 'DELETE' }); toast("O'chirildi"); loadMy(); } catch(e) { toast(e.message); }
+}
+
+// boshlash
+(async function init(){
+  if (!tg || !tg.initData) {
+    $('spin').style.display = 'none';
+    $('splashMsg').textContent = "Iltimos, ilovani Telegram bot ichidan oching.";
+    return;
+  }
+  try {
+    const [me] = await Promise.all([api('/api/me'), sleep(1300)]);
+    setCoins(me.coins);
+    if (me.name) $('uname').textContent = ', ' + me.name;
+    const opts = me.destinations.map(d => `<option value="${esc(d)}">${esc(d)}</option>`).join('');
+    $('fDest').innerHTML = opts; $('sDest').innerHTML = opts;
+    goHome();
+  } catch(e) {
+    $('spin').style.display = 'none';
+    $('splashMsg').textContent = e.message + ". Qayta urinib ko'ring.";
+  }
+})();
+</script>
+</body>
+</html>
